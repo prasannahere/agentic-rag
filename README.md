@@ -266,15 +266,10 @@ Contributions are welcome! Please ensure:
 - Documentation is updated
 - Tests pass (if applicable)
 
-## 📝 License
-
-[Add your license here]
 
 ## 🆘 Support
 
 For issues, questions, or contributions, please [open an issue](link-to-issues) or contact the development team.
 
----
 
-**Built with ❤️ for enterprise document intelligence**
 
