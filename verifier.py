@@ -9,30 +9,28 @@ from config import PathConfig
 class VerificationOutput(BaseModel):
     """Output schema for answer verification"""
     
-    is_valid: bool = Field(..., description="Whether the answer is valid and legitimate")
-    confidence_score: float = Field(..., description="Confidence score from 0.0 to 1.0")
+    is_relevant_context: bool = Field(..., description="Conext relevance to the question")
     reasoning: str = Field(..., description="Detailed explanation of the verification decision")
-    concerns: str = Field(..., description="Any red flags or issues identified during verification")
-    recommendation: str = Field(..., description="Recommendation: 'accept', 'reject', or 'clarify'")
+    answer: str = Field(..., description="Answer to the question")
 
 class AnswerVerificationAgent:
     """
-    CrewAI agent that critically verifies if an answer legitimately addresses the question.
-    Approaches with healthy skepticism while remaining objective and unbiased.
+    CrewAI agent that intelligently verifies if retrieved context is relevant to a question
+    and generates accurate answers from the context when relevant.
     """
     
     def __init__(self, llm_config_path: str = None):
         """
-        Initialize the answer verification agent.
+        Initialize the context verification and answer generation agent.
         
         Args:
             llm_config_path: Path to LLM configuration file (defaults to PathConfig)
         """
-        print("[INFO] Initializing Answer Verification Agent...")
+        print("[INFO] Initializing Context Verification and Answer Generation Agent...")
         llm_config_path = llm_config_path or str(PathConfig.get_llm_config_path())
         self.llm_config = self._load_yaml(llm_config_path)
         self.llm = self._init_llm()
-        print("[INFO] Answer Verification Agent ready")
+        print("[INFO] Context Verification and Answer Generation Agent ready")
     
     def _load_yaml(self, file_path: str) -> dict:
         """Load YAML configuration file"""
@@ -82,129 +80,158 @@ class AnswerVerificationAgent:
             timeout=llm_settings['timeout']
         )
     
-    def verify_answer(self, question: str, answer: str) -> dict:
+    def verify_context_and_answer(self, question: str, context: str) -> dict:
         """
-        Critically verify if the provided answer legitimately addresses the question.
-        
-        Approaches with healthy skepticism - assumes the answer might be incorrect,
-        incomplete, or irrelevant, but evaluates objectively based on evidence.
+        Intelligently verify if the provided context is relevant to the question.
+        If relevant, generate a smart answer from the context.
         
         Args:
-            question: The original question asked
-            answer: The answer to be verified
+            question: The question asked by the user
+            context: The retrieved context to verify and use for answering
             
         Returns:
             Dictionary containing verification results with the following keys:
-            - is_valid: bool indicating if answer is legitimate
-            - confidence_score: float from 0.0 to 1.0
-            - reasoning: detailed explanation of the verification
-            - concerns: any red flags or issues identified
-            - recommendation: 'accept', 'reject', or 'clarify'
+            - is_relevant_context: bool indicating if context is relevant to question
+            - reasoning: detailed explanation of relevance and answer generation
+            - answer: the generated answer from context (or empty if not relevant)
         """
         agent = Agent(
-            role="Critical Answer Verification Specialist",
-            goal="Objectively verify if answers legitimately address questions with healthy skepticism",
-            backstory="""You are a meticulous answer verification specialist with expertise in 
-            critical thinking and objective evaluation. Your primary approach is skeptical - you 
-            assume answers might be wrong, incomplete, or irrelevant until proven otherwise.
+            role="Context Relevance Analyst and Answer Generator",
+            goal="Intelligently verify context relevance to questions and generate accurate answers from relevant context",
+            backstory="""You are an expert context analyst and answer generation specialist.
+            Your primary responsibility is to evaluate whether retrieved context is actually
+            relevant to a given question, and if so, generate a high-quality answer from that context.
             
-            However, you remain completely objective and unbiased. Your skepticism is methodical,
-            not predetermined. You evaluate based on evidence and logic, not prejudice.
+            Your two-phase evaluation process:
             
-            Your evaluation framework:
+            PHASE 1: CONTEXT RELEVANCE VERIFICATION
+            ========================================
+            You first determine if the provided context has ANY meaningful connection to the question:
             
-            1. RELEVANCE CHECK:
-               - Does the answer actually address the question asked?
-               - Is it answering a different question?
-               - Are there topic mismatches?
+            1. SEMANTIC RELEVANCE:
+               - Does the context discuss topics directly related to the question?
+               - Are there keywords, concepts, or entities that match?
+               - Is there topical alignment between context and question?
             
-            2. COMPLETENESS CHECK:
-               - Does it provide a complete answer?
-               - Are critical details missing?
-               - Does it leave important aspects unaddressed?
+            2. INFORMATION UTILITY:
+               - Does the context contain information that could help answer the question?
+               - Even if partial, does it provide useful details?
+               - Could someone use this context to address the question?
             
-            3. ACCURACY CHECK:
-               - Are the facts and procedures stated correctly?
-               - Are there contradictions or inconsistencies?
-               - Does it contain vague or ambiguous information?
+            3. REJECTION CRITERIA (mark as NOT relevant):
+               - Context discusses completely different topics
+               - No semantic overlap between context and question
+               - Context is about a different domain/subject entirely
+               - Context provides zero useful information for the question
             
-            4. CLARITY CHECK:
-               - Is the answer clear and understandable?
-               - Is it actionable if it's a procedural answer?
-               - Does it contain confusing or circular reasoning?
+            PHASE 2: INTELLIGENT ANSWER GENERATION (if relevant)
+            =====================================================
+            If context IS relevant, generate a smart, accurate answer:
             
-            5. RED FLAGS:
-               - Generic/template-like responses
-               - Overly vague statements
-               - Contradictory information
-               - Missing critical safety or security steps
-               - Irrelevant information padding
+            1. EXTRACT KEY INFORMATION:
+               - Identify all relevant facts, procedures, steps from context
+               - Synthesize information across different parts of context
+               - Focus on what directly addresses the question
             
-            You approach each answer thinking "This might not be right" but then evaluate 
-            objectively. If the answer passes your rigorous checks, you acknowledge it.
-            If it fails, you clearly articulate why.
+            2. GENERATE COMPREHENSIVE ANSWER:
+               - Provide clear, complete answer based on context
+               - Include specific details (contacts, steps, systems, etc.)
+               - Structure answer logically and clearly
+               - Stay faithful to the context - don't hallucinate
+            
+            3. ENSURE QUALITY:
+               - Answer should be actionable and useful
+               - Include all critical information from context
+               - Be concise but complete
+               - Maintain accuracy to source context
+            
+            You are objective and intelligent - if context is relevant (even partially), 
+            you recognize it and generate the best possible answer. If context is truly
+            irrelevant, you clearly mark it as such without attempting to force an answer.
             """,
             verbose=False,
             llm=self.llm,
             allow_delegation=False,
-            reasoning=True
+            # reasoning=True,
+            #max_reasoning_attempts=1
         )
         
         task = Task(
             description=f"""
-            Critically verify if the provided answer legitimately addresses the question.
-            Approach with primary suspicion but evaluate objectively.
+            Your task is to intelligently verify if the provided context is relevant to the question,
+            and if so, generate a smart, accurate answer from that context.
             
             QUESTION:
             {question}
             
-            ANSWER TO VERIFY:
-            {answer}
+            RETRIEVED CONTEXT:
+            {context}
             
-            VERIFICATION PROTOCOL:
+            EVALUATION PROTOCOL:
             
-            Step 1 - Initial Skepticism:
-            Start by assuming this answer might be inadequate. What could be wrong with it?
+            STEP 1: CONTEXT RELEVANCE CHECK
+            ================================
+            Analyze if the context has ANY meaningful connection to the question:
             
-            Step 2 - Relevance Analysis:
-            - Does this answer actually address what was asked?
-            - Is there a semantic mismatch between question and answer?
-            - Is it answering a different question entirely?
+            - Does the context discuss the same topic/subject as the question?
+            - Are there matching keywords, concepts, entities, or themes?
+            - Does the context contain information that could help answer the question?
+            - Is there semantic alignment between context and question?
             
-            Step 3 - Completeness Analysis:
-            - Are all aspects of the question addressed?
-            - Are critical steps or information missing?
-            - Would someone be able to act on this answer fully?
+            DECISION CRITERIA:
             
-            Step 4 - Accuracy Analysis:
-            - Do the facts/procedures make sense?
-            - Are there contradictions or inconsistencies?
-            - Is information too vague to be useful?
+            ✓ Mark as RELEVANT if:
+              - Context discusses the topic asked about
+              - Context contains information useful for answering
+              - There is clear topical/semantic overlap
+              - Context provides even partial information related to question
             
-            Step 5 - Red Flag Detection:
-            - Generic/boilerplate language without specifics?
-            - Missing critical details (contacts, systems, approval steps)?
-            - Circular reasoning or non-answers?
-            - Information that seems irrelevant or padding?
+            ✗ Mark as NOT RELEVANT if:
+              - Context is about a completely different topic
+              - Zero semantic overlap with question
+              - Context provides no useful information for the question
+              - Complete domain/subject mismatch
             
-            Step 6 - Objective Conclusion:
-            Despite your initial skepticism, if the answer passes all checks, acknowledge it.
-            If it fails any checks, be specific about what's wrong.
+            STEP 2: ANSWER GENERATION (only if context is relevant)
+            ========================================================
+            If context IS relevant, generate a comprehensive answer:
             
-            SCORING GUIDE:
-            - 0.0-0.3: Answer is inadequate/wrong (reject)
-            - 0.4-0.6: Answer has issues but partial value (clarify)
-            - 0.7-0.8: Answer is good with minor concerns (accept with notes)
-            - 0.9-1.0: Answer is comprehensive and legitimate (accept)
+            1. EXTRACT all relevant information from context:
+               - Identify key facts, procedures, steps, details
+               - Find specific information (contacts, systems, dates, etc.)
+               - Note any important requirements or conditions
             
-            Provide your verification with complete objectivity.
+            2. SYNTHESIZE into a clear answer:
+               - Directly address the question
+               - Include all relevant details from context
+               - Structure logically and clearly
+               - Be specific and actionable
+               - Stay faithful to context - no hallucinations
+            
+            3. ENSURE COMPLETENESS:
+               - Cover all aspects the context addresses
+               - Include critical details (who, what, when, where, how)
+               - Make answer useful and actionable
+            
+            STEP 3: OUTPUT GENERATION
+            =========================
+            
+            If context is RELEVANT:
+            - is_relevant_context: true
+            - reasoning: Explain why context is relevant and how you generated the answer
+            - answer: Your comprehensive, well-structured answer from the context
+            
+            If context is NOT RELEVANT:
+            - is_relevant_context: false
+            - reasoning: Explain why context is not relevant to the question
+            - answer: "" (empty string)
+            
+            Be intelligent and objective in your evaluation.
             """,
-            expected_output="""Structured verification with:
-            1. is_valid: true/false
-            2. confidence_score: 0.0-1.0
-            3. reasoning: detailed explanation
-            4. concerns: specific issues identified
-            5. recommendation: accept/reject/clarify""",
+            expected_output="""Structured output with:
+            1. is_relevant_context: true/false
+            2. reasoning: detailed explanation
+            3. answer: generated answer from context (or empty if not relevant)""",
             agent=agent,
             output_pydantic=VerificationOutput
         )
@@ -218,18 +245,23 @@ class AnswerVerificationAgent:
         result = crew.kickoff()
         
         verification_result = {
-            "is_valid": result.pydantic.is_valid,
-            "confidence_score": result.pydantic.confidence_score,
+            "is_relevant_context": result.pydantic.is_relevant_context,
             "reasoning": result.pydantic.reasoning,
-            "concerns": result.pydantic.concerns,
-            "recommendation": result.pydantic.recommendation
+            "answer": result.pydantic.answer
         }
 
-        print(verification_result)
-        print("================================================")
+        print("\n" + "="*80)
+        print("CONTEXT VERIFICATION AND ANSWER GENERATION")
+        print("="*80)
         print(f"Question: {question}")
-        print(f"Answer: {answer}")
-        print(f"Verification Result: {verification_result}")
-        print("================================================")
+        print(f"\nContext Preview: {context[:200]}..." if len(context) > 200 else f"\nContext: {context}")
+        print(f"\nIs Context Relevant: {verification_result['is_relevant_context']}")
+        print(f"\nReasoning: {verification_result['reasoning']}")
+        if verification_result['is_relevant_context']:
+            print(f"\nGenerated Answer: {verification_result['answer']}")
+        else:
+            print("\nNo answer generated (context not relevant)")
+        print("="*80 + "\n")
+        
         return verification_result
 

@@ -22,39 +22,43 @@ class LanguageModel:
 
     def _init_client(self):
         """Initialize Azure OpenAI client"""
+
         return AzureOpenAI(
             azure_endpoint=self.config.get('endpoint'),
             api_version=self.config.get('version'),
             api_key=self.config.get('api_key'),
         )
     
+
     def generate_answer(self, query: str, context: str) -> str:
         """
-        Generate an answer using context + query.
-        The assistant should ONLY use the provided context.
-        If context is insufficient, it must explicitly say it doesn't know.
-
-
+        Generate an answer strictly based on the provided context.
+        If the context lacks sufficient info, respond accordingly.
         """
-        
-        prompt = f"""
-        You are an precise and factual assistant. Follow these rules strictly:
-    
-        1. Only use information from the provided context.
-        2. Keep answers concise and to the point.
-        3. Do not provide additional commentary.
-        4. When giving an answer, quote the part of the context you are using (if possible).
-        
-        Context:
-        {context}
-    
-        Question:
-        {query}
-    
-        """
+
+        messages = [
+            {"role": "system", "content": dedent(
+            """
+                You are a precise and factual assistant.
+                Follow these rules strictly:
+                1. Use ONLY the information provided in the context.
+                2. Keep answers concise, clear, and factual.
+                3. If the context does not have enough information, say exactly:
+                   "I don't know based on the provided context."
+                4. When possible, quote or refer to the relevant part of the context.
+            """
+            )}
+            ,
+            {"role": "assistant", "content": f"Context:\n{context}"},
+            {"role": "user", "content": query}        
+            ]
+
         response = self.client.chat.completions.create(
             model=self.model_name,
-            messages=[{"role": "system", "content": dedent(prompt)}],
+            messages=messages,
+            temperature=self.config.get('temperature', 0.2),
+            max_tokens=self.config.get('max_tokens', 512),
         )
+
         return response.choices[0].message.content.strip()
     

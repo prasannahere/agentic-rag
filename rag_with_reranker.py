@@ -5,7 +5,6 @@ import chromadb
 from generator import LanguageModel
 from expander import QueryExpansionAgent
 from verifier import AnswerVerificationAgent
-import verifier
 from config import PathConfig
 
 class BGEReranker:
@@ -334,13 +333,12 @@ class RAGWithReranker:
         if verbose:
             print(f"\n[STEP 4] Generating answer with LLM...")
         
-        answer = self.llm.generate_answer(query, context)
 
         if best_score < self.verification_threshold:
             print(f"[INFO] Answer score is less than {self.verification_threshold}. Verifying answer...")
-            verification_result = self.verifier.verify_answer(question=query, answer=answer)
+            verification_result = self.verifier.verify_context_and_answer(question=query, context=context)
 
-            if not verification_result['is_valid']:
+            if not verification_result['is_relevant_context']:
                 print(f"[INFO] Answer is not valid. Returning no information available.")
                 return {
                     "query": query,
@@ -351,7 +349,18 @@ class RAGWithReranker:
                     "scores": [],
                     "best_score": best_score
                 }
+            return {
+                "query": query,
+                "query_used": query_used,
+                "answer": verification_result['answer'],
+                "context": context,
+                "sources": [],
+                "scores": [],
+                "best_score": best_score
+            }
         
+        answer = self.llm.generate_answer(query, context)
+
         
         if verbose:
             print(f"\n{'='*80}")

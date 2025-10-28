@@ -83,21 +83,27 @@ class QueryExpansionAgent:
     
     def expand_query(self, original_query: str) -> list:
         """
-        Transform a question-like query into an information-like statement.
+        Transform a question-like query into an information-like statement with jargon variations.
         
         IMPORTANT: Questions have poor matching with SOPs (Standard Operating Procedures)
         because SOPs are written as guidelines and instructions, not as questions.
         
+        Additionally, this method creates variations using BOTH original jargon AND common synonyms
+        to maximize document matching across different terminology styles.
+        
         This method transforms:
-        - "What is the password reset process?" -> "password reset process steps procedure"
-        - "How do I request SSL certificate?" -> "SSL certificate request procedure guidelines"
-        - "Who handles access requests?" -> "access request handling process responsibility"
+        - "What is the passphrase reset process?" -> 
+            ["passphrase reset process steps", "password reset procedure", "access code recovery"]
+        - "How do I request SSL certificate?" -> 
+            ["SSL certificate request procedure", "security certificate application", "TLS certificate guidelines"]
+        - "Who handles VPN access requests?" -> 
+            ["VPN access request handling", "virtual private network provisioning", "secure connection setup"]
         
         Args:
             original_query: The original question
             
         Returns:
-            List of 3 transformed queries as information-seeking statements
+            List of 4 queries: original + 3 transformed variations with synonym alternatives
         """
         agent = Agent(
             role="Query Transformation Specialist",
@@ -113,18 +119,34 @@ class QueryExpansionAgent:
             3. Converting "Who handles Z?" into "Z handling responsibility process"
             4. Extracting key concepts and converting them to search-friendly terms
             5. Removing question words (what, how, who, when, where, why) and rephrasing as statements
+            6. Creating variations using BOTH original jargon AND common synonyms/alternatives
+            
+            CRITICAL JARGON STRATEGY:
+            - One variation MUST preserve the exact jargon/technical terms from the original query
+            - Other variations MUST use common synonyms and alternative terms for those jargons
+            - This ensures broad matching across documents that may use different terminology
+            
+            Jargon examples:
+            - "passphrase" <-> "password"
+            - "credentials" <-> "login details" <-> "access information"
+            - "SSL certificate" <-> "security certificate" <-> "TLS certificate"
+            - "VPN" <-> "virtual private network" <-> "secure connection"
+            - "authenticate" <-> "login" <-> "sign in"
 
             Examples:
             - "I am locked out of my account what can i do, the password says wrong!" -> 
             [
-            "Password reset procedure" ,  
-            "locked out of account protocol"  ,
-            "account access recovery"
+            "Password reset procedure",  
+            "Passphrase recovery process",
+            "Account access recovery credentials"
             ]
             """,
             verbose=False,
             llm=self.llm,
-            allow_delegation=False
+            allow_delegation=False,
+            reasoning=True,
+            max_reasoning_attempts=1
+
         )
         
         task = Task(
@@ -137,17 +159,29 @@ class QueryExpansionAgent:
             Transform this question into a statement that describes the information being sought.
 
             Strategy:
-            1. Removing question words (what, how, who, when, where, why)
-            2. Converting to declarative statement form
-            3. Keeping key nouns and action verbs
-            4. Adding terms like 'process', 'procedure', 'steps', 'guidelines' if applicable
+            1. Identify and extract all technical jargon, acronyms, and specialized terms from the query
+            2. Remove question words (what, how, who, when, where, why) and question marks
+            3. Convert to declarative statement form using key nouns and action verbs
+            4. Add contextual terms like 'process', 'procedure', 'steps', 'guidelines' where applicable
+            5. Create 3 variations with DELIBERATE synonym substitution strategy:
+               
+               Variation 1: Keep ONE key jargon term EXACTLY as stated in original query (preserve technical accuracy)
+               Variation 2: Use COMMON SYNONYMS or alternative terms for the jargon (capture broader usage)
+               Variation 3: Use DIFFERENT SYNONYMS or rephrase with related concepts (maximize coverage)
+            
+            JARGON ALTERNATION EXAMPLES:
+            - "password"  ↔ "credentials"
+            - "SSL certificate" ↔ "security certificate" ↔ "TLS certificate" ↔ "digital certificate"
+            - "VPN access" ↔ "virtual private network" ↔ "secure connection" ↔ "remote access"
+            - "authenticate" ↔ "login" ↔ "sign in" ↔ "verify identity"
+            - "provisioned" ↔ "created" ↔ "set up" ↔ "configured"
 
             Rules:
             1. Output ONLY the transformed query - no explanations, no quotes, no preamble
-            2. Make it concise to get highest cosine similarity score in vectorDB
-            3. Remove all question words and question marks
+            2. Make it concise to maximize cosine similarity score in vectorDB
+            3. Each variation MUST use different terminology for jargon terms when possible
             4. Use keywords and phrases that would appear in a guideline document
-            5. Focus on nouns, verbs, and domain-specific terms/jargons
+            5. Focus on nouns, verbs, and domain-specific terms
 
             Output format: Just the transformed query text""",
             expected_output="3 transformed query statements without explanations or quotes",
