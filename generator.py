@@ -22,9 +22,6 @@ class LanguageModel:
 
     def _init_client(self):
         """Initialize Azure OpenAI client"""
-        print(f"[INFO] Initializing Azure OpenAI client with endpoint: {self.config.get('endpoint')}")
-        print(f"[INFO] Initializing Azure OpenAI client with version: {self.config.get('version')}")
-        print(f"[INFO] Initializing Azure OpenAI client with api_key: {self.config.get('api_key')}")
         return AzureOpenAI(
             azure_endpoint=self.config.get('endpoint'),
             api_version=self.config.get('version'),

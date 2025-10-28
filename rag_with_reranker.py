@@ -306,7 +306,7 @@ class RAGWithReranker:
             
             return {
                 "query": query,
-                "answer": "No information available. I couldn't find relevant documents for this query.",
+                "answer": "No information available. I couldn't find relevant resolution for this query.",
                 "context": "",
                 "sources": [],
                 "scores": [],
@@ -345,7 +345,7 @@ class RAGWithReranker:
                 return {
                     "query": query,
                     "query_used": query_used,
-                    "answer": "No information available. I couldn't find relevant documents for this query.",
+                    "answer": "No information available. I couldn't find relevant resolution for this query.",
                     "context": "",
                     "sources": [],
                     "scores": [],

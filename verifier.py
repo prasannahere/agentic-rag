@@ -11,6 +11,9 @@ class VerificationOutput(BaseModel):
     
     is_valid: bool = Field(..., description="Whether the answer is valid and legitimate")
     confidence_score: float = Field(..., description="Confidence score from 0.0 to 1.0")
+    reasoning: str = Field(..., description="Detailed explanation of the verification decision")
+    concerns: str = Field(..., description="Any red flags or issues identified during verification")
+    recommendation: str = Field(..., description="Recommendation: 'accept', 'reject', or 'clarify'")
 
 class AnswerVerificationAgent:
     """
@@ -217,9 +220,16 @@ class AnswerVerificationAgent:
         verification_result = {
             "is_valid": result.pydantic.is_valid,
             "confidence_score": result.pydantic.confidence_score,
-
+            "reasoning": result.pydantic.reasoning,
+            "concerns": result.pydantic.concerns,
+            "recommendation": result.pydantic.recommendation
         }
 
-        
+        print(verification_result)
+        print("================================================")
+        print(f"Question: {question}")
+        print(f"Answer: {answer}")
+        print(f"Verification Result: {verification_result}")
+        print("================================================")
         return verification_result
 
