@@ -25,7 +25,10 @@ class RAGPipeline:
 
 
 # ====== FastAPI App ======
-app = FastAPI(title="Agentic-RAG API")
+app = FastAPI(title="Agentic-RAG API", 
+            description="API for Agentic-RAG intelligent Q&A pipeline with Reranker and Chroma integration.", 
+            version="0.6.0", 
+            contact={ "name": "Agentic-RAG Team", "email": "prasanna0083@gmail.com, pssmvamsi@gmail.com", } )
 
 config_file = str(PathConfig.get_config_path())
 rag_pipeline = RAGPipeline(config_file)
