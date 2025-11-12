@@ -1,58 +1,28 @@
 # Core CrewAI and AI frameworks
-crewai>=0.28.0
-crewai-tools>=0.2.0
-pydantic>=2.0.0
+crewai==0.201.0
 
 # LLM and Embeddings
-openai>=1.0.0
-sentence-transformers>=2.2.0
-chromadb>=0.4.0
-onnxruntime>=1.16.0
-
-# Numpy compatibility fix for ChromaDB
-numpy<2.0.0,>=1.24.0
+sentence-transformers==5.1.2
+chromadb==1.1.1
+openai==2.7.2
 
 # LangChain for text processing and retrieval
-langchain>=0.1.0
-langchain-core>=0.1.0
-langchain-community>=0.0.10
-langchain-text-splitters>=0.0.1
-langchain-openai>=0.0.5
-langgraph>=0.0.40
-rank-bm25>=0.2.2
-
-# Document Processing
-pypdf>=3.0.0
-pdfplumber>=0.9.0
-python-docx>=1.0.0
-mammoth>=1.0.0
+langchain==1.0.5
+langchain-core==1.0.4
+langchain-community==0.4.1
+langchain-text-splitters==1.0.0
 
 # Azure Services
-azure-storage-blob>=12.0.0
+azure-storage-blob==12.27.1
 
 # Web Framework (FastAPI)
-fastapi>=0.100.0
-uvicorn>=0.23.0
+fastapi==0.121.1
+uvicorn==0.38.0
 
 # Utilities
-requests>=2.31.0
-pyyaml>=6.0.0
-python-dotenv>=1.0.0
-watchdog>=3.0.0
+requests==2.32.5
+pyyaml==6.0.3
+python-dotenv==1.2.1
 
-# Optional performance enhancements
-torch>=2.0.0
+unstructured[all-docs]==0.18.18
 
-#docloader
-langchain
-langchain-community
-langchain-text-splitters
-unstructured[all-docs]
-pdfminer.six
-pillow
-pdf2image
-pytesseract
-python-docx
-mammoth
-python-pptx
-pi-heif

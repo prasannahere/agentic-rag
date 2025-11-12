@@ -30,6 +30,31 @@ An advanced Retrieval-Augmented Generation (RAG) system designed for enterprise 
 
 ## 🏗️ Architecture
 
+The project follows a **layered architecture** pattern for clean separation of concerns:
+
+### Layer Structure
+
+```
+src/agentic_rag/
+├── domain/              # Domain Layer - Business logic and core entities
+│   ├── exceptions.py    # Custom exceptions
+│   ├── state.py         # State management models
+│   ├── utils.py         # PathConfig and utilities
+│   └── prompts/         # Prompt templates
+│
+├── application/         # Application Layer - Business workflows
+│   ├── agents/          # AI agents (expander, verifier)
+│   └── rag_pipeline.py  # Main RAG pipeline orchestration
+│
+└── infrastructure/      # Infrastructure Layer - External integrations
+    ├── api/             # FastAPI REST endpoints
+    ├── persistence/     # ChromaDB, embeddings, indexing
+    ├── llm/             # Language model clients
+    └── connectors/       # SharePoint, Azure Blob, Google Drive
+```
+
+### System Flow
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Data Sources Layer                       │
@@ -76,6 +101,8 @@ An advanced Retrieval-Augmented Generation (RAG) system designed for enterprise 
                     └────────────────┘
 ```
 
+For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -87,6 +114,8 @@ An advanced Retrieval-Augmented Generation (RAG) system designed for enterprise 
 
 ### Installation
 
+#### Option 1: Local Development
+
 1. **Clone the repository**
 ```bash
 git clone <repository-url>
@@ -95,10 +124,18 @@ cd agentic-rag
 
 2. **Install dependencies**
 ```bash
+make install
+# or
 pip install -r requirements.txt
 ```
 
-3. **Configure data sources**
+3. **Configure environment**
+```bash
+cp .env.example .env
+# Edit .env with your API keys and configuration
+```
+
+4. **Configure data sources**
 
 Create/update configuration files in the `config/` directory:
 
@@ -108,9 +145,26 @@ Create/update configuration files in the `config/` directory:
 - `expander_prompts.yaml` - Query expansion prompts
 - `service_account.json` - Google Cloud credentials
 
-4. **Start the API server**
+5. **Start the API server**
 ```bash
-python main.py
+make run
+# or
+uvicorn agentic_rag.infrastructure.api.main:app --host 0.0.0.0 --port 8100 --reload
+```
+
+The API will be available at `http://localhost:8100`
+
+#### Option 2: Docker
+
+1. **Build and run with Docker Compose**
+```bash
+make docker-build
+make docker-up
+```
+
+2. **Or use docker-compose directly**
+```bash
+docker-compose up -d
 ```
 
 The API will be available at `http://localhost:8100`
@@ -137,7 +191,7 @@ Response:
 ### Python SDK
 
 ```python
-from rag_with_reranker import RAGWithReranker
+from agentic_rag.application.rag_pipeline import RAGWithReranker
 
 # Initialize the RAG system
 rag = RAGWithReranker(
@@ -162,13 +216,13 @@ print(f"Best score: {result['best_score']:.4f}")
 
 ```bash
 # SharePoint connector
-python runners/run_spconnector.py
+python -m agentic_rag.infrastructure.connectors.sharepoint.main
 
 # Azure Blob connector
-python runners/run_blobconnector.py
+python -m agentic_rag.infrastructure.connectors.blob.main
 
 # Google Drive connector
-python runners/run_gdrive.py
+python -m agentic_rag.infrastructure.connectors.gdrive.main
 ```
 
 ## 🔧 Configuration
@@ -212,21 +266,29 @@ The system automatically generates 3 variations of each query:
 
 ```
 agentic-rag/
-├── blobconnector/         # Azure Blob Storage integration
-├── spconnector/           # SharePoint integration
-├── gdrive/                # Google Drive integration
-├── document_pipeline/     # Document processing and indexing
-├── runners/               # Standalone connector runners
+├── src/
+│   └── agentic_rag/       # Main application package
+│       ├── domain/        # Domain layer - Business logic
+│       ├── application/   # Application layer - Workflows
+│       └── infrastructure/# Infrastructure layer - Integrations
+│           ├── api/       # FastAPI REST API
+│           ├── persistence/# ChromaDB and embeddings
+│           ├── llm/       # LLM clients
+│           └── connectors/# Data source connectors
+│               ├── sharepoint/
+│               ├── blob/
+│               └── gdrive/
 ├── config/                # Configuration files
 ├── data/                  # Downloaded documents and cache
 ├── chroma_store/          # ChromaDB vector storage
-├── rag_with_reranker.py   # Main RAG implementation
-├── generator.py           # LLM answer generation
-├── expander.py            # Query expansion agent
-├── verifier.py            # Answer verification agent
-├── main.py                # FastAPI server
+├── tests/                 # Test suite
+├── Dockerfile             # Docker container definition
+├── docker-compose.yaml    # Docker Compose configuration
+├── pyproject.toml         # Project metadata
 └── requirements.txt       # Python dependencies
 ```
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed architecture documentation.
 
 ## 🔍 How It Works
 

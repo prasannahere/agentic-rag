@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  agentic-rag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentic-rag-api
+    ports:
+      - "8100:8100"
+    volumes:
+      # Mount config directory for runtime configuration changes
+      - ./config:/app/config
+      # Mount data directory for persistent storage
+      - ./data:/app/data
+      # Mount chroma_store for persistent vector database
+      - ./chroma_store:/app/chroma_store
+    environment:
+      - PYTHONPATH=/app
+      - CHROMA_DB_PATH=/app/chroma_store
+      - LLM_CONFIG_PATH=/app/config/llm_config.yaml
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    networks:
+      - agentic-rag-network
+    restart: unless-stopped
+
+networks:
+  agentic-rag-network:
+    driver: bridge
