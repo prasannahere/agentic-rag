@@ -7,12 +7,12 @@ class AzureBlobWatcher:
         self.tracker = tracker
         self.processor = processor
         self.prefix = prefix
-        self.download_dir = download_dir
+        self.download_dir = Path(download_dir)
         self.download_dir.mkdir(exist_ok=True)
         self.poll_interval = poll_interval
 
     def run(self):
-        print("[AzureBlobWatcher] Started monitoring Azure Blob Storage...")
+        print("[Watcher] Monitoring Azure Blob Storage...")
         while True:
             try:
                 blobs = self.api.list_files(self.prefix)
@@ -28,10 +28,10 @@ class AzureBlobWatcher:
                             self.tracker.mark_seen(blob_id)
                             print(f"[Watcher] Downloaded + processed {blob_name}")
                         except Exception as e:
-                            print(f"[Watcher] Error downloading {blob_name}: {e}")
+                            print(f"[Watcher] Failed {blob_name}: {e}")
                             self.tracker.mark_seen(blob_id)
 
                 time.sleep(self.poll_interval)
             except Exception as e:
-                print(f"[AzureBlobWatcher] Fatal error in loop: {e}")
+                print(f"[Watcher] Fatal loop error: {e}")
                 time.sleep(self.poll_interval)

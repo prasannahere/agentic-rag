@@ -16,7 +16,7 @@ class PathConfig:
     EXPANDER_PROMPTS =PROJECT_ROOT/ "src" / "agentic_rag" / "domain" / "prompts" / "expander_prompts.yaml"
     SERVICE_ACCOUNT = CONFIG_DIR / "service_account.json"
     SP_CONFIG = CONFIG_DIR / "sp-config.json"
-    
+    BLOB_CONFIG = CONFIG_DIR / "blob-config.json"
     # Data directories
     DATA_DIR = PROJECT_ROOT / "data"
     DOWNLOADED_FILES = DATA_DIR / "downloaded_files"
@@ -33,6 +33,10 @@ class PathConfig:
     
     # Database paths
     CHROMA_STORE = PROJECT_ROOT / "chroma_store"
+
+    # Upload data directories
+    UPLOAD_DATA_DIR = DATA_DIR / "upload_data"
+    UPLOAD_SEEN_FILES = UPLOAD_DATA_DIR / "upload_seen_files.json"
     
     # Environment variable overrides (optional)
     @classmethod

@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
+from agentic_rag.infrastructure.connectors.upload.main import UploadConnector
 import uvicorn
 import threading
 from agentic_rag.application.rag_pipeline import RAGWithReranker
@@ -61,6 +62,12 @@ def startup_event():
     except ImportError:
         print("[WARNING] SharePoint watcher not available")
 
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(..., description="The file to upload")):
+    client = UploadConnector()
+    client.upload_file(file.filename, file.file)
+    return {"message": f"File '{file.filename}' added to RAG successfully"}
+
 
 @app.post("/ask")
 def ask_question(req: QueryRequest):
@@ -79,4 +86,3 @@ def health_check():
 
 if __name__ == "__main__":
     uvicorn.run("agentic_rag.infrastructure.api.main:app", host="0.0.0.0", port=8100, reload=True)
-

@@ -1,5 +1,5 @@
+import json
 from pathlib import Path
-from azure.storage.blob import BlobServiceClient
 
 from agentic_rag.domain.utils import PathConfig
 from .azure_blob_api import AzureBlobAPI
@@ -7,45 +7,30 @@ from .azure_blob_watcher import AzureBlobWatcher
 from .file_tracker import FileTracker
 from .processor import Processor
 
-# ==== Replace with your details ====
-STORAGE_ACCOUNT_NAME = "nttdatahugo---"
-STORAGE_ACCESS_KEY = "longlongkey"  # a.k.a primary admin key
-CONTAINER_NAME = "hugossssop"
+# Use PathConfig to get project root
+BASE_DIR = PathConfig.PROJECT_ROOT
+CONFIG_PATH = PathConfig.BLOB_CONFIG
 
-# ...s
-DOWNLOAD_DIR = PathConfig.BLOB_DOWNLOADED_FILES
-# ===================================
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    config = json.load(f)
 
-# Init API
-api = AzureBlobAPI(STORAGE_ACCOUNT_NAME, STORAGE_ACCESS_KEY, CONTAINER_NAME)
-
-# Optional: list containers for sanity check
-service = BlobServiceClient(
-    account_url=f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
-    credential=STORAGE_ACCESS_KEY
+api = AzureBlobAPI(
+    storage_account_name=config["storage_account_name"],
+    storage_access_key=config["storage_access_key"],
+    container_name=config["container_name"]
 )
-print("Available containers:")
-for container in service.list_containers():
-    print("-", container["name"])
 
-
-# Setup configuration paths
-TRACKER_FILE = PathConfig.BLOB_SEEN_FILES
-TRACKER_FILE.parent.mkdir(parents=True, exist_ok=True)
-DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-# Initialize tracker and processor
-tracker = FileTracker(TRACKER_FILE)
+tracker = FileTracker(BASE_DIR / config["seen_files_path"])
 processor = Processor()
 
-# Run watcher (continuously downloads new/changed blobs)
 watcher = AzureBlobWatcher(
     api,
     tracker,
     processor,
-    prefix="",  # optional blob folder filter
-    download_dir=DOWNLOAD_DIR,
-    poll_interval=5
+    prefix=config.get("prefix", ""),
+    download_dir=BASE_DIR / config["download_dir"],
+    poll_interval=config.get("poll_interval", 5)
 )
 
-watcher.run()
+if __name__ == "__main__":
+    watcher.run()

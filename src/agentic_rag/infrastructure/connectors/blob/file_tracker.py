@@ -11,7 +11,7 @@ class FileTracker:
     def _load_seen_files(self):
         if self.storage_file.exists():
             try:
-                with open(self.storage_file, 'r') as f:
+                with open(self.storage_file, "r") as f:
                     return json.load(f)
             except json.JSONDecodeError:
                 return {}
@@ -28,7 +28,7 @@ class FileTracker:
         else:
             # Simple tracking for blob storage (etag only)
             self.seen_files[file_id] = {"seen_at": datetime.now().isoformat()}
-        self._save_seen_files()
+        self._save()
 
     def has_seen(self, file_id: str, modified_time: str = None):
         """Return True if file_id is seen and modified time hasn't changed (if provided)."""
@@ -39,6 +39,6 @@ class FileTracker:
             return info.get("modified_time") == modified_time
         return True
 
-    def _save_seen_files(self):
-        with open(self.storage_file, 'w') as f:
+    def _save(self):
+        with open(self.storage_file, "w") as f:
             json.dump(self.seen_files, f, indent=2)
